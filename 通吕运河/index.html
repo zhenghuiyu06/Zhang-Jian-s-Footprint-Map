@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>通吕运河·张謇时空罗盘</title>
+    
+    <!-- 引入 Leaflet 地图库 -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- 引入 ECharts 图表库 -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+
+    <style>
+        body { margin: 0; padding: 0; display: flex; height: 100vh; font-family: 'KaiTi', '楷体', serif; background-color: #f4eadd; overflow: hidden; }
+        
+        #sidebar { width: 300px; background-color: #ece1ce; border-right: 3px solid #8b5a2b; box-shadow: 2px 0 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; overflow-y: auto; z-index: 10; }
+        .sidebar-title { text-align: center; font-size: 24px; color: #3e2b1b; margin-bottom: 20px; border-bottom: 2px dashed #8b5a2b; padding-bottom: 10px; font-weight: bold; }
+        .location-btn { background-color: #d8c5a8; border: 1px solid #8b5a2b; color: #3e2b1b; padding: 12px; margin-bottom: 15px; font-size: 18px; font-family: inherit; cursor: pointer; border-radius: 4px; transition: all 0.3s ease; }
+        .location-btn:hover { background-color: #8b5a2b; color: #fff; box-shadow: 0 4px 8px rgba(139, 90, 43, 0.4); }
+        
+        #map { flex-grow: 1; height: 100%; z-index: 1; }
+        
+        #card-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); z-index: 1000; opacity: 0; transition: opacity 0.5s ease; }
+        #bamboo-card { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -40%); width: 500px; max-height: 85vh; background: repeating-linear-gradient(to right, #eedcbf, #eedcbf 38px, #d8c19c 38px, #d8c19c 40px); border: 2px solid #5c3a21; border-radius: 4px; box-shadow: 10px 10px 30px rgba(0,0,0,0.5); padding: 30px; box-sizing: border-box; overflow-y: auto; transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #card-overlay.show { display: block; opacity: 1; }
+        #card-overlay.show #bamboo-card { transform: translate(-50%, -50%); }
+        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #5c3a21; font-weight: bold; }
+        .close-btn:hover { color: #d32f2f; }
+        #card-title { font-size: 28px; color: #3e2b1b; text-align: center; margin-top: 0; margin-bottom: 15px; font-weight: bold; }
+        #card-story { font-size: 18px; color: #2c1e16; line-height: 1.8; text-indent: 2em; margin-bottom: 20px; text-align: justify; }
+        
+        /* 知识图谱容器 */
+        #card-graph { width: 100%; height: 250px; border: 2px solid #8b5a2b; border-radius: 5px; margin-bottom: 20px; background-color: rgba(44, 30, 22, 0.05); display: none; }
+        
+        /* 视频容器 */
+        .video-container { width: 100%; aspect-ratio: 16 / 9; background-color: #000; border: 2px solid #8b5a2b; box-sizing: border-box; border-radius: 5px; overflow: hidden; display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <div class="sidebar-title">运河纪事</div>
+        <div id="button-container"></div>
+    </div>
+
+    <div id="map"></div>
+
+    <div id="card-overlay">
+        <div id="bamboo-card">
+            <span class="close-btn" onclick="closeCard()">×</span>
+            <h2 id="card-title">地点名称</h2>
+            <div id="card-story">加载中...</div>
+            
+            <!-- 预留的图谱容器 -->
+            <div id="card-graph"></div>
+            
+            <!-- 预留的视频容器 -->
+            <div class="video-container" id="card-video"></div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 🌟 你的核心数据 🌟
+        // ==========================================
+        const canalData = [
+            {
+                "name": "吕四渔港",
+                "lat": 32.1641,
+                "lng": 121.6029,
+                "story": "张謇先生曾多次考察吕四，在此筹划渔业公司与垦牧事业。如今的吕四连接着绝美的临海公路，可谓“始于鲜味，终于海景”，见证了百年江海宏图的沧桑巨变与现代延续。",
+                "videoSrc": "",
+                "graphData": {
+                    "nodes": [
+                        { "name": "张謇", "category": 1 },
+                        { "name": "吕四渔港", "category": 2 },
+                        { "name": "同仁泰垦牧公司", "category": 4 }
+                    ],
+                    "links": [
+                        { "source": "张謇", "target": "吕四渔港", "label": "考察" },
+                        { "source": "张謇", "target": "同仁泰垦牧公司", "label": "创办" }
+                    ]
+                }
+            },
+            {
+                "name": "唐闸",
+                "lat": 32.0625,
+                "lng": 120.8358,
+                "story": "吾昔年乘舟勘察通州水系，至通吕运河之滨，见唐家闸水陆交汇，诚乃实业发祥之佳地。光绪二十一年，吾投资于此创办大生纱厂，以企‘富民强国’之愿。昔日芦荡荒滩，机器轰鸣间渐成市镇。正所谓‘天地之大德曰生’，吾誓以实业为基，辟南通之新局，以尽匹夫报国之责。",
+                "videoSrc": "",
+                "graphData": {
+                    "nodes": [
+                        {"name": "张謇", "category": 1},
+                        {"name": "唐闸", "category": 2},
+                        {"name": "刘鹗", "category": 3},
+                        {"name": "大生纱厂", "category": 4},
+                        {"name": "创办大生", "category": 5}
+                    ],
+                    "links": [
+                        {"source": "张謇", "target": "唐闸", "label": "勘察开发"},
+                        {"source": "张謇", "target": "大生纱厂", "label": "创办"},
+                        {"source": "张謇", "target": "刘鹗", "label": "共议勘址"},
+                        {"source": "张謇", "target": "创办大生", "label": "践行"},
+                        {"source": "大生纱厂", "target": "唐闸", "label": "落座"}
+                    ]
+                }
+            }
+        ];
+
+        // ==========================================
+        // 地图初始化与渲染
+        // ==========================================
+        const map = L.map('map').setView([32.0, 119.0], 6);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        const buttonContainer = document.getElementById('button-container');
+
+        canalData.forEach(item => {
+            const marker = L.marker([item.lat, item.lng]).addTo(map);
+            marker.bindTooltip(item.name, { permanent: false, direction: 'top' });
+
+            const btn = document.createElement('button');
+            btn.className = 'location-btn';
+            btn.innerText = item.name;
+            
+            btn.onclick = () => {
+                map.flyTo([item.lat, item.lng], 14, { animate: true, duration: 2.5 });
+                map.once('moveend', () => {
+                    openCard(item);
+                });
+            };
+
+            buttonContainer.appendChild(btn);
+        });
+
+        // 预留一个全局变量给 ECharts 图表实例
+        let chartInstance = null;
+
+        function openCard(data) {
+            // 1. 注入文字
+            document.getElementById('card-title').innerText = data.name;
+            document.getElementById('card-story').innerText = data.story;
+            
+            // 2. 注入本地 HTML5 视频
+            const videoContainer = document.getElementById('card-video');
+            if (data.videoSrc && data.videoSrc.trim() !== "") {
+                videoContainer.innerHTML = `<video controls width="100%" height="100%" style="object-fit: cover;"><source src="${data.videoSrc}" type="video/mp4">您的浏览器不支持视频播放。</video>`;
+                videoContainer.style.display = 'block';
+            } else {
+                videoContainer.innerHTML = '';
+                videoContainer.style.display = 'none';
+            }
+            
+            // ---> 请通知 Cursor 在这里写入 ECharts 图谱渲染逻辑 <---
+            const cardGraphEl = document.getElementById('card-graph');
+            const gd = data.graphData;
+            const hasGraphData =
+                gd && Array.isArray(gd.nodes) && gd.nodes.length > 0;
+
+            if (chartInstance) {
+                chartInstance.dispose();
+                chartInstance = null;
+            }
+
+            if (!hasGraphData) {
+                cardGraphEl.style.display = 'none';
+            } else {
+                cardGraphEl.style.display = 'block';
+
+                const categoryPalette = {
+                    1: '#8B2500',
+                    2: '#A0522D',
+                    3: '#B8860B',
+                    4: '#4A6741',
+                    5: '#2C3E6B'
+                };
+                const categoryNames = ['张謇', '地点', '人物', '机构', '事件'];
+                const categories = [1, 2, 3, 4, 5].map(function (c) {
+                    return {
+                        name: categoryNames[c - 1],
+                        itemStyle: { color: categoryPalette[c] }
+                    };
+                });
+
+                const nodes = gd.nodes.map(function (n) {
+                    var raw = typeof n.category === 'number' ? n.category : 1;
+                    var idx = Math.min(Math.max(raw, 1), 5) - 1;
+                    return {
+                        name: n.name,
+                        category: idx,
+                        symbolSize: raw === 1 ? 52 : 22
+                    };
+                });
+
+                const rawLinks = Array.isArray(gd.links) ? gd.links : [];
+                const links = rawLinks.map(function (l) {
+                    return {
+                        source: l.source,
+                        target: l.target,
+                        label: {
+                            show: true,
+                            formatter: l.label || '',
+                            fontSize: 11,
+                            color: '#3e2b1b',
+                            fontFamily: "'KaiTi', '楷体', serif"
+                        },
+                        lineStyle: {
+                            color: 'rgba(62, 43, 27, 0.5)',
+                            width: 1,
+                            curveness: 0.12
+                        }
+                    };
+                });
+
+                chartInstance = echarts.init(cardGraphEl);
+                chartInstance.setOption({
+                    backgroundColor: 'transparent',
+                    tooltip: {
+                        trigger: 'item',
+                        formatter: '{b}'
+                    },
+                    series: [
+                        {
+                            type: 'graph',
+                            layout: 'force',
+                            data: nodes,
+                            links: links,
+                            categories: categories,
+                            roam: true,
+                            draggable: true,
+                            label: {
+                                show: true,
+                                position: 'right',
+                                color: '#2c1e16',
+                                fontFamily: "'KaiTi', '楷体', serif",
+                                fontSize: 12
+                            },
+                            emphasis: {
+                                focus: 'adjacency',
+                                lineStyle: { width: 2 }
+                            },
+                            lineStyle: {
+                                color: 'rgba(62, 43, 27, 0.45)',
+                                curveness: 0.1
+                            },
+                            force: {
+                                repulsion: 150,
+                                gravity: 0.1,
+                                edgeLength: [60, 120],
+                                layoutAnimation: true
+                            }
+                        }
+                    ]
+                });
+
+                setTimeout(function () {
+                    if (chartInstance) chartInstance.resize();
+                }, 400);
+            }
+
+            // 弹出动画
+            const overlay = document.getElementById('card-overlay');
+            overlay.classList.add('show');
+        }
+
+        function closeCard() {
+            const overlay = document.getElementById('card-overlay');
+            overlay.classList.remove('show');
+            
+            setTimeout(() => {
+                document.getElementById('card-video').innerHTML = '';
+            }, 500); 
+        }
+
+        document.getElementById('card-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeCard();
+        });
+
+    </script>
+</body>
+</html>
