@@ -1,0 +1,1911 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>张謇时空罗盘 · 通吕运河诗歌数字人文平台</title>
+
+  <!-- Google Fonts: Noto Serif SC (headings) + Noto Sans SC (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;700&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ===========================================
+       CSS RESET
+       =========================================== */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* ===========================================
+       CSS CUSTOM PROPERTIES (THEME)
+       Change these to recolor the entire deck
+       =========================================== */
+    :root {
+      --bg-primary: #080808;
+      --bg-card: #141820;
+      --gold: #C9A84C;
+      --gold-dim: rgba(201, 168, 76, 0.25);
+      --gold-faint: rgba(201, 168, 76, 0.12);
+      --gold-glow: rgba(201, 168, 76, 0.04);
+      --blue-dark: #1a2744;
+      --text-primary: #e8e0d0;
+      --text-white: #ffffff;
+      --text-muted: rgba(232, 224, 208, 0.5);
+
+      --font-serif: 'Noto Serif SC', serif;
+      --font-sans: 'Noto Sans SC', sans-serif;
+
+      /* Responsive typography — tuned for 1920×1080 */
+      --title-size: clamp(1.8rem, 4.5vw, 3.8rem);
+      --h2-size: clamp(1.2rem, 3vw, 2.2rem);
+      --h3-size: clamp(1rem, 2vw, 1.5rem);
+      --body-size: clamp(0.7rem, 1.2vw, 1rem);
+      --small-size: clamp(0.6rem, 0.9vw, 0.8rem);
+
+      --slide-padding: clamp(1.5rem, 4vw, 4rem);
+      --content-gap: clamp(0.8rem, 1.5vw, 1.5rem);
+
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* ===========================================
+       VIEWPORT FITTING
+       =========================================== */
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-primary);
+      font-family: var(--font-sans);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Subtle grid texture on body */
+    body {
+      background-color: var(--bg-primary);
+      background-image:
+        repeating-linear-gradient(
+          0deg,
+          var(--gold-glow) 0px,
+          var(--gold-glow) 1px,
+          transparent 1px,
+          transparent 50px
+        ),
+        repeating-linear-gradient(
+          90deg,
+          var(--gold-glow) 0px,
+          var(--gold-glow) 1px,
+          transparent 1px,
+          transparent 50px
+        );
+    }
+
+    /* ===========================================
+       SLIDE CONTAINER & SLIDES
+       =========================================== */
+    .slides-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .slide.active {
+      opacity: 1;
+      pointer-events: auto;
+      z-index: 2;
+    }
+
+    /* Corner gold border on every slide */
+    .slide::after {
+      content: '';
+      position: absolute;
+      inset: 24px;
+      border: 1px solid var(--gold-dim);
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .slide-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      max-height: 100%;
+      overflow: hidden;
+      padding: var(--slide-padding);
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ===========================================
+       TYPOGRAPHY HELPERS
+       =========================================== */
+    .serif { font-family: var(--font-serif); }
+    .sans  { font-family: var(--font-sans); }
+    .gold  { color: var(--gold); }
+    .white { color: var(--text-white); }
+    .muted { color: var(--text-muted); }
+
+    h1, h2, h3, .serif-title {
+      font-family: var(--font-serif);
+      color: var(--text-white);
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    h1 { font-size: var(--title-size); }
+    h2 { font-size: var(--h2-size); }
+    h3 { font-size: var(--h3-size); }
+
+    /* Gold gradient divider (transparent → gold → transparent) */
+    .gold-divider {
+      width: 50%;
+      max-width: 500px;
+      height: 1px;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--gold) 25%,
+        var(--gold) 75%,
+        transparent 100%
+      );
+      margin: 0 auto;
+    }
+
+    /* ===========================================
+       BOTTOM NAVIGATION BAR
+       =========================================== */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(12px, 2vw, 24px);
+      background: linear-gradient(to top, rgba(8,8,8,0.95) 0%, rgba(8,8,8,0.7) 60%, transparent 100%);
+      z-index: 1000;
+      padding: 0 24px;
+      user-select: none;
+    }
+
+    .nav-arrow {
+      background: none;
+      border: 1px solid var(--gold-dim);
+      color: var(--gold);
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.25s ease;
+      font-family: var(--font-sans);
+      line-height: 1;
+    }
+    .nav-arrow:hover {
+      background: rgba(201, 168, 76, 0.15);
+      border-color: var(--gold);
+      color: var(--text-white);
+    }
+
+    .nav-dots {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(201, 168, 76, 0.25);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .nav-dot.active {
+      background: var(--gold);
+      box-shadow: 0 0 8px rgba(201, 168, 76, 0.4);
+      width: 10px;
+      height: 10px;
+    }
+    .nav-dot:hover {
+      background: rgba(201, 168, 76, 0.5);
+    }
+
+    .nav-page {
+      color: var(--gold);
+      font-family: var(--font-sans);
+      font-size: var(--small-size);
+      letter-spacing: 0.15em;
+      min-width: 70px;
+      text-align: center;
+    }
+
+    /* ===========================================
+       IMAGE PLACEHOLDERS
+       =========================================== */
+    .img-placeholder {
+      border: 1px dashed var(--gold-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: var(--small-size);
+      text-align: center;
+      background: rgba(201, 168, 76, 0.03);
+      position: relative;
+      overflow: hidden;
+    }
+    .img-placeholder.circle {
+      border-radius: 50%;
+      border-style: solid;
+      border-color: var(--gold-dim);
+    }
+    .img-placeholder.rounded {
+      border-radius: 12px;
+    }
+
+    /* ===========================================
+       SVG CANAL DECORATION
+       =========================================== */
+    .canal-svg {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 40%;
+      height: 100%;
+      opacity: 0.7;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .canal-svg.mirror {
+      right: auto;
+      left: 0;
+      transform: scaleX(-1);
+    }
+
+    /* ===========================================
+       SLIDE 1: COVER
+       =========================================== */
+    .slide-cover .cover-layout {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(2rem, 6vw, 6rem);
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+    .slide-cover .cover-text {
+      text-align: center;
+      flex: 1;
+    }
+    .slide-cover .cover-title {
+      font-family: var(--font-serif);
+      font-size: clamp(2.5rem, 6vw, 5.5rem);
+      color: var(--gold);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      line-height: 1.2;
+    }
+    .slide-cover .cover-subtitle {
+      font-family: var(--font-sans);
+      font-size: clamp(0.9rem, 1.5vw, 1.3rem);
+      color: var(--text-primary);
+      margin-top: clamp(0.5rem, 1.5vh, 1.2rem);
+      letter-spacing: 0.12em;
+      font-weight: 300;
+    }
+    .slide-cover .cover-url {
+      font-family: var(--font-sans);
+      font-size: var(--small-size);
+      color: var(--gold);
+      letter-spacing: 0.2em;
+      margin-top: clamp(0.8rem, 2vh, 1.5rem);
+    }
+    .slide-cover .cover-footer {
+      position: absolute;
+      bottom: clamp(2rem, 4vh, 3.5rem);
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-sans);
+      font-size: var(--small-size);
+      color: var(--text-muted);
+      letter-spacing: 0.15em;
+      z-index: 2;
+      text-align: center;
+    }
+    .slide-cover .cover-photo-placeholder {
+      width: 180px;
+      height: 180px;
+      flex-shrink: 0;
+      z-index: 2;
+    }
+
+    /* ===========================================
+       SLIDE 2: POLICY CONTEXT
+       =========================================== */
+    .slide-policy .policy-header {
+      text-align: center;
+      margin-bottom: clamp(0.8rem, 2vh, 1.5rem);
+    }
+    .slide-policy .policy-header h2 {
+      color: var(--gold);
+    }
+    .slide-policy .policy-subtitle {
+      font-size: var(--small-size);
+      color: var(--gold);
+      letter-spacing: 0.25em;
+      margin-top: 0.3rem;
+      font-family: var(--font-sans);
+    }
+    .slide-policy .cards-row {
+      display: flex;
+      gap: clamp(0.8rem, 2vw, 1.5rem);
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .slide-policy .policy-card {
+      flex: 1;
+      background: var(--bg-card);
+      border-left: 2px solid var(--gold);
+      padding: clamp(1rem, 2.5vh, 1.8rem) clamp(0.8rem, 1.5vw, 1.5rem);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.4rem, 1vh, 0.8rem);
+    }
+    .slide-policy .policy-card .card-icon {
+      font-size: clamp(1.5rem, 3vw, 2.2rem);
+      margin-bottom: 0.2rem;
+    }
+    .slide-policy .policy-card .card-title {
+      font-family: var(--font-serif);
+      font-size: clamp(0.85rem, 1.1vw, 1.1rem);
+      color: var(--text-white);
+      font-weight: 600;
+    }
+    .slide-policy .policy-card .card-desc {
+      font-size: var(--body-size);
+      color: var(--text-primary);
+      line-height: 1.7;
+    }
+    .slide-policy .policy-banner {
+      width: calc(100% - 48px);
+      max-width: 1100px;
+      margin: clamp(0.8rem, 2vh, 1.5rem) auto 0;
+      background: rgba(201, 168, 76, 0.06);
+      border: 1px solid rgba(201, 168, 76, 0.18);
+      padding: clamp(8px, 1.5vh, 14px) clamp(1rem, 2vw, 2rem);
+      text-align: center;
+      color: var(--gold);
+      font-family: var(--font-serif);
+      font-size: clamp(0.8rem, 1.1vw, 1.05rem);
+      letter-spacing: 0.08em;
+    }
+
+    /* ===========================================
+       SLIDE 3: CORE CONCEPT (入脑入芯)
+       =========================================== */
+    .slide-concept .concept-center {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: clamp(0.8rem, 2vh, 1.5rem);
+    }
+    .slide-concept .concept-big {
+      font-family: var(--font-serif);
+      font-size: clamp(60px, 6.5vw, 130px);
+      color: var(--gold);
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      line-height: 1;
+    }
+    .slide-concept .concept-columns {
+      display: flex;
+      gap: clamp(2rem, 6vw, 6rem);
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .slide-concept .concept-col {
+      flex: 1;
+      text-align: left;
+    }
+    .slide-concept .concept-col .col-header {
+      font-family: var(--font-serif);
+      font-size: clamp(0.9rem, 1.3vw, 1.15rem);
+      color: var(--gold);
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+    .slide-concept .concept-col .col-text {
+      font-size: var(--body-size);
+      color: var(--text-primary);
+      line-height: 1.8;
+    }
+    .slide-concept .concept-footer {
+      font-family: var(--font-sans);
+      font-size: clamp(0.6rem, 0.8vw, 0.75rem);
+      color: var(--gold);
+      letter-spacing: 0.2em;
+      margin-top: clamp(1rem, 3vh, 2rem);
+      text-align: center;
+    }
+
+    /* ===========================================
+       SLIDE 4: PRODUCT FEATURES
+       =========================================== */
+    .slide-features .features-layout {
+      display: flex;
+      gap: clamp(1.5rem, 3vw, 3rem);
+      width: 100%;
+      max-width: 1150px;
+      margin: 0 auto;
+      align-items: stretch;
+    }
+    .slide-features .features-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.8rem, 2vh, 1.5rem);
+    }
+    .slide-features .features-left h2 {
+      color: var(--gold);
+    }
+    .slide-features .feature-item {
+      padding: clamp(0.6rem, 1.5vh, 1rem) 0;
+      border-bottom: 1px solid rgba(201, 168, 76, 0.08);
+    }
+    .slide-features .feature-item .feature-label {
+      font-family: var(--font-sans);
+      font-size: var(--body-size);
+      color: var(--gold);
+      font-weight: 700;
+      margin-bottom: 0.2rem;
+    }
+    .slide-features .feature-item .feature-title {
+      font-family: var(--font-serif);
+      font-size: clamp(0.9rem, 1.3vw, 1.2rem);
+      color: var(--text-white);
+      font-weight: 600;
+      margin-bottom: 0.15rem;
+    }
+    .slide-features .feature-item .feature-desc {
+      font-size: var(--body-size);
+      color: var(--text-primary);
+      line-height: 1.6;
+      margin-bottom: 0.1rem;
+    }
+    .slide-features .feature-stats {
+      margin-top: clamp(0.5rem, 1vh, 1rem);
+      font-family: var(--font-sans);
+      font-size: clamp(0.75rem, 1vw, 0.9rem);
+      color: var(--gold);
+      letter-spacing: 0.06em;
+    }
+    .slide-features .feature-stats .stat-big {
+      font-family: var(--font-serif);
+      font-size: clamp(3rem, 5vw, 5rem);
+      color: var(--gold);
+      font-weight: 700;
+      line-height: 1;
+      display: inline;
+      margin: 0 0.15em;
+      vertical-align: middle;
+    }
+    .slide-features .features-right {
+      flex: 0 0 38%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .slide-features .screenshot-placeholder {
+      width: 100%;
+      height: clamp(280px, 55vh, 450px);
+      max-width: 340px;
+      border-radius: 18px;
+    }
+
+    /* ===========================================
+       SLIDE 5: CORE QUOTE
+       =========================================== */
+    .slide-quote .quote-center {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: clamp(0.6rem, 1.5vh, 1rem);
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .slide-quote .quote-line {
+      font-family: var(--font-serif);
+      font-size: clamp(18px, 1.6vw, 30px);
+      color: var(--gold);
+      line-height: 1.8;
+    }
+    .slide-quote .quote-line.big {
+      font-size: clamp(28px, 2.8vw, 52px);
+      font-weight: 700;
+      line-height: 1.4;
+    }
+    .slide-quote .quote-attribution {
+      font-family: var(--font-sans);
+      font-size: var(--small-size);
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+    }
+    .slide-quote .quote-photo-mini {
+      position: absolute;
+      bottom: clamp(2.5rem, 5vh, 4rem);
+      right: clamp(3rem, 5vw, 5rem);
+      width: 80px;
+      height: 80px;
+      z-index: 2;
+    }
+
+    /* ===========================================
+       SLIDE 6: EDUCATION VALUE
+       =========================================== */
+    .slide-education .edu-layout {
+      display: flex;
+      gap: clamp(2rem, 4vw, 4rem);
+      width: 100%;
+      max-width: 1000px;
+      margin: 0 auto;
+      align-items: flex-start;
+    }
+    .slide-education .edu-col {
+      flex: 1;
+    }
+    .slide-education .edu-col h3 {
+      margin-bottom: clamp(0.6rem, 1.5vh, 1rem);
+    }
+    .slide-education .edu-col h3.danger {
+      color: #b85c4a;
+    }
+    .slide-education .edu-col h3.golden {
+      color: var(--gold);
+    }
+    .slide-education .edu-divider {
+      width: 1px;
+      align-self: stretch;
+      background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        var(--gold) 20%,
+        var(--gold) 80%,
+        transparent 100%
+      );
+      flex-shrink: 0;
+    }
+    .slide-education .edu-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.5rem, 1.2vh, 0.9rem);
+    }
+    .slide-education .edu-list li {
+      font-size: var(--body-size);
+      color: var(--text-primary);
+      line-height: 1.7;
+      padding-left: 1em;
+      position: relative;
+    }
+    .slide-education .edu-list li::before {
+      content: '—';
+      position: absolute;
+      left: -0.3em;
+      color: var(--gold);
+    }
+    .slide-education .edu-list li .sub {
+      display: block;
+      color: var(--gold);
+      font-size: var(--small-size);
+      margin-bottom: 0.15em;
+    }
+    .slide-education .edu-banner {
+      width: calc(100% - 48px);
+      max-width: 1000px;
+      margin: clamp(1rem, 2.5vh, 2rem) auto 0;
+      background: rgba(201, 168, 76, 0.06);
+      border: 1px solid rgba(201, 168, 76, 0.18);
+      padding: clamp(8px, 1.5vh, 14px) clamp(1rem, 2vw, 2rem);
+      text-align: center;
+      color: var(--gold);
+      font-family: var(--font-serif);
+      font-size: clamp(0.8rem, 1.1vw, 1.05rem);
+      letter-spacing: 0.06em;
+    }
+
+    /* ===========================================
+       SLIDE 7: FUTURE PLANS
+       =========================================== */
+    .slide-future .future-layout {
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.8rem, 2vh, 1.5rem);
+    }
+    .slide-future h2 {
+      color: var(--gold);
+      text-align: center;
+    }
+    /* Timeline */
+    .slide-future .timeline {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      position: relative;
+      padding: clamp(14px, 2vh, 20px) 0;
+    }
+    .slide-future .timeline::before {
+      content: '';
+      position: absolute;
+      top: 22px;
+      left: 8%;
+      right: 8%;
+      height: 1px;
+      background: rgba(201, 168, 76, 0.22);
+    }
+    .slide-future .timeline-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      z-index: 1;
+      flex: 1;
+      text-align: center;
+    }
+    .slide-future .timeline-circle {
+      width: clamp(36px, 3vw, 44px);
+      height: clamp(36px, 3vw, 44px);
+      border-radius: 50%;
+      border: 2px solid var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-primary);
+      color: var(--gold);
+      font-family: var(--font-serif);
+      font-size: clamp(14px, 1.2vw, 18px);
+      flex-shrink: 0;
+    }
+    .slide-future .timeline-label {
+      font-family: var(--font-serif);
+      font-size: clamp(0.7rem, 0.9vw, 0.85rem);
+      color: var(--text-white);
+      font-weight: 600;
+    }
+    .slide-future .timeline-desc {
+      font-size: clamp(0.6rem, 0.75vw, 0.7rem);
+      color: var(--text-muted);
+      max-width: 160px;
+      line-height: 1.5;
+    }
+    /* Location cards */
+    .slide-future .location-cards {
+      display: flex;
+      gap: clamp(0.6rem, 1.2vw, 1rem);
+    }
+    .slide-future .location-card {
+      flex: 1;
+      background: var(--bg-card);
+      border-top: 2px solid var(--gold);
+      padding: clamp(0.6rem, 1.2vh, 1rem);
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    .slide-future .location-card .poem-name {
+      font-family: var(--font-serif);
+      font-size: clamp(0.7rem, 0.9vw, 0.85rem);
+      color: var(--text-white);
+      font-weight: 600;
+    }
+    .slide-future .location-card .arrow-down {
+      text-align: center;
+      color: var(--gold);
+      font-size: var(--small-size);
+    }
+    .slide-future .location-card .place-name {
+      font-family: var(--font-sans);
+      font-size: clamp(0.65rem, 0.85vw, 0.8rem);
+      color: var(--gold);
+    }
+    .slide-future .location-card .card-img-placeholder {
+      height: clamp(50px, 8vh, 75px);
+      margin-top: 0.3rem;
+      border-radius: 4px;
+    }
+    .slide-future .future-tagline {
+      text-align: center;
+      font-family: var(--font-serif);
+      font-size: clamp(0.85rem, 1.3vw, 1.15rem);
+      color: var(--gold);
+      letter-spacing: 0.1em;
+      margin-top: clamp(0.3rem, 0.8vh, 0.6rem);
+    }
+
+    /* ===========================================
+       SLIDE 8: CONCLUSION
+       =========================================== */
+    .slide-conclusion .conclusion-center {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: clamp(0.6rem, 1.5vh, 1rem);
+      position: relative;
+      z-index: 2;
+    }
+    .slide-conclusion .conclusion-tag {
+      font-family: var(--font-sans);
+      font-size: var(--small-size);
+      color: var(--gold);
+      letter-spacing: 0.25em;
+    }
+    .slide-conclusion .conclusion-main {
+      font-family: var(--font-serif);
+      font-size: clamp(22px, 2.2vw, 38px);
+      color: var(--text-white);
+      font-weight: 600;
+      line-height: 1.5;
+      max-width: 700px;
+    }
+    .slide-conclusion .conclusion-sub {
+      font-family: var(--font-serif);
+      font-size: clamp(16px, 1.4vw, 24px);
+      color: var(--gold);
+      font-weight: 400;
+      letter-spacing: 0.06em;
+    }
+    .slide-conclusion .conclusion-url {
+      font-family: var(--font-serif);
+      font-size: clamp(32px, 3.5vw, 56px);
+      color: var(--gold);
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      margin-top: clamp(0.5rem, 1.5vh, 1rem);
+    }
+    .slide-conclusion .conclusion-footer {
+      font-family: var(--font-sans);
+      font-size: var(--small-size);
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-align: center;
+      line-height: 1.8;
+    }
+
+    /* ===========================================
+       INLINE EDITING STYLES
+       =========================================== */
+    .edit-hotzone {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 80px;
+      height: 80px;
+      z-index: 10000;
+      cursor: pointer;
+    }
+    .edit-toggle {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(8, 8, 8, 0.85);
+      border: 1px solid var(--gold-dim);
+      color: var(--gold);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 10001;
+    }
+    .edit-toggle.show,
+    .edit-toggle.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .edit-toggle.active {
+      background: rgba(201, 168, 76, 0.15);
+      border-color: var(--gold);
+    }
+
+    .edit-banner {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(8, 8, 8, 0.9);
+      border: 1px solid var(--gold-dim);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      padding: 6px 18px;
+      color: var(--gold);
+      font-size: 12px;
+      font-family: var(--font-sans);
+      letter-spacing: 0.06em;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .edit-banner.active {
+      opacity: 1;
+    }
+
+    /* Edit mode cursor hints */
+    body.edit-active [contenteditable="true"] {
+      outline: 1px dashed rgba(201, 168, 76, 0.2);
+      outline-offset: 3px;
+      cursor: text;
+    }
+    body.edit-active [contenteditable="true"]:hover {
+      outline-color: rgba(201, 168, 76, 0.5);
+    }
+    body.edit-active [contenteditable="true"]:focus {
+      outline: 1px solid var(--gold);
+      outline-offset: 4px;
+    }
+
+    /* ===========================================
+       SLIDE 4 (NEW): WORKFLOW / PRODUCTION PIPELINE
+       =========================================== */
+    .slide-workflow .workflow-header {
+      text-align: center;
+      margin-bottom: clamp(0.8rem, 2vh, 1.5rem);
+    }
+    .slide-workflow .workflow-header h2 {
+      color: var(--gold);
+    }
+    .slide-workflow .workflow-header .section-tag {
+      font-size: var(--small-size);
+      color: var(--gold);
+      letter-spacing: 0.2em;
+      font-family: var(--font-sans);
+    }
+    .slide-workflow .pipeline {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      gap: clamp(8px, 1vw, 16px);
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto clamp(0.8rem, 2vh, 1.5rem);
+    }
+    .slide-workflow .pipeline-step {
+      flex: 1;
+      background: var(--bg-card);
+      border-top: 3px solid var(--gold);
+      padding: clamp(0.8rem, 2vh, 1.5rem) clamp(0.6rem, 1.2vw, 1rem);
+      text-align: center;
+      position: relative;
+    }
+    .slide-workflow .pipeline-step .step-number {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.8vw, 2.2rem);
+      color: var(--gold);
+      font-weight: 700;
+      line-height: 1;
+    }
+    .slide-workflow .pipeline-step .step-title {
+      font-family: var(--font-serif);
+      font-size: clamp(0.8rem, 1vw, 1rem);
+      color: var(--text-white);
+      font-weight: 600;
+      margin: 0.3rem 0;
+    }
+    .slide-workflow .pipeline-step .step-desc {
+      font-size: var(--small-size);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+    .slide-workflow .pipeline-step .step-owner {
+      display: inline-block;
+      margin-top: 0.5rem;
+      padding: 2px 10px;
+      border: 1px solid rgba(201, 168, 76, 0.35);
+      border-radius: 20px;
+      font-size: clamp(0.55rem, 0.7vw, 0.65rem);
+      color: var(--gold);
+      font-family: var(--font-sans);
+    }
+    .slide-workflow .pipeline-arrow {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: clamp(1.2rem, 3vh, 2rem);
+      color: var(--gold-dim);
+      font-size: clamp(1rem, 1.5vw, 1.5rem);
+      flex-shrink: 0;
+      width: clamp(24px, 3vw, 40px);
+    }
+    .slide-workflow .pipeline-banner {
+      width: calc(100% - 48px);
+      max-width: 1100px;
+      margin: 0 auto;
+      background: rgba(201, 168, 76, 0.06);
+      border: 1px solid rgba(201, 168, 76, 0.18);
+      padding: clamp(8px, 1.5vh, 14px) clamp(1rem, 2vw, 2rem);
+      text-align: center;
+      color: var(--gold);
+      font-family: var(--font-serif);
+      font-size: clamp(0.7rem, 0.9vw, 0.9rem);
+      letter-spacing: 0.06em;
+    }
+    .slide-workflow .team-row {
+      display: flex;
+      gap: clamp(1rem, 2vw, 2rem);
+      width: 100%;
+      max-width: 800px;
+      margin: clamp(0.6rem, 1.5vh, 1rem) auto 0;
+    }
+    .slide-workflow .team-card {
+      flex: 1;
+      background: rgba(201, 168, 76, 0.04);
+      border-left: 2px solid var(--gold-dim);
+      padding: clamp(0.5rem, 1.2vh, 0.8rem) clamp(0.6rem, 1.2vw, 1rem);
+      font-size: var(--small-size);
+    }
+    .slide-workflow .team-card .team-role {
+      color: var(--gold);
+      font-family: var(--font-serif);
+      font-weight: 600;
+      font-size: clamp(0.7rem, 0.85vw, 0.8rem);
+    }
+    .slide-workflow .team-card .team-detail {
+      color: var(--text-primary);
+      line-height: 1.6;
+      margin-top: 0.2rem;
+    }
+
+    /* ===========================================
+       SLIDE 7 (NEW): MULTI-DIMENSIONAL ANNOTATION
+       =========================================== */
+    .slide-annotation .slide-content {
+      justify-content: flex-start;
+      overflow-y: auto;
+      padding-top: clamp(1rem, 3vh, 2rem);
+    }
+    .slide-annotation .annotation-header {
+      text-align: center;
+      margin-bottom: clamp(0.4rem, 1.2vh, 0.7rem);
+      flex-shrink: 0;
+    }
+    .slide-annotation .annotation-header h2 {
+      color: var(--gold);
+    }
+    .slide-annotation .annotation-header .section-tag {
+      font-size: var(--small-size);
+      color: var(--gold);
+      letter-spacing: 0.2em;
+      font-family: var(--font-sans);
+    }
+    .slide-annotation .annotation-stack {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.3rem, 0.8vh, 0.5rem);
+      width: 100%;
+      max-width: 1050px;
+      margin: 0 auto;
+      overflow-y: auto;
+    }
+    .slide-annotation .annotation-layer {
+      display: flex;
+      align-items: stretch;
+      gap: clamp(0.5rem, 1vw, 0.8rem);
+    }
+    .slide-annotation .layer-badge {
+      flex: 0 0 clamp(100px, 12vw, 140px);
+      background: var(--bg-card);
+      border-left: 3px solid var(--gold);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(0.3rem, 0.8vh, 0.5rem);
+      text-align: center;
+    }
+    .slide-annotation .layer-badge .layer-icon {
+      font-size: clamp(1rem, 1.5vw, 1.5rem);
+      margin-bottom: 0.1rem;
+    }
+    .slide-annotation .layer-badge .layer-name {
+      font-family: var(--font-serif);
+      font-size: clamp(0.7rem, 0.85vw, 0.9rem);
+      color: var(--text-white);
+      font-weight: 600;
+    }
+    .slide-annotation .layer-badge .layer-tag {
+      font-size: clamp(0.45rem, 0.55vw, 0.55rem);
+      color: var(--gold);
+      font-family: var(--font-sans);
+      letter-spacing: 0.08em;
+    }
+    .slide-annotation .layer-body {
+      flex: 1;
+      background: var(--bg-card);
+      padding: clamp(0.4rem, 1vh, 0.7rem) clamp(0.5rem, 1vw, 0.8rem);
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .slide-annotation .layer-body .layer-question {
+      font-family: var(--font-serif);
+      font-size: clamp(0.65rem, 0.8vw, 0.8rem);
+      color: var(--gold);
+      font-weight: 600;
+    }
+    .slide-annotation .layer-body .layer-items {
+      display: flex;
+      gap: clamp(0.3rem, 0.6vw, 0.5rem);
+      flex-wrap: wrap;
+    }
+    .slide-annotation .layer-body .layer-item {
+      font-size: clamp(0.5rem, 0.7vw, 0.65rem);
+      color: var(--text-primary);
+      padding: 2px 7px;
+      border: 1px solid rgba(201, 168, 76, 0.15);
+      border-radius: 3px;
+      background: rgba(201, 168, 76, 0.04);
+      white-space: nowrap;
+    }
+    .slide-annotation .layer-body .layer-output {
+      font-size: clamp(0.5rem, 0.7vw, 0.65rem);
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-top: 0.1rem;
+    }
+    .slide-annotation .annotation-banner {
+      width: calc(100% - 48px);
+      max-width: 1050px;
+      margin: clamp(0.3rem, 0.8vh, 0.5rem) auto 0;
+      background: rgba(201, 168, 76, 0.06);
+      border: 1px solid rgba(201, 168, 76, 0.18);
+      padding: clamp(5px, 1vh, 10px) clamp(0.8rem, 1.5vw, 1.5rem);
+      text-align: center;
+      color: var(--gold);
+      font-family: var(--font-serif);
+      font-size: clamp(0.55rem, 0.75vw, 0.75rem);
+      letter-spacing: 0.04em;
+      line-height: 1.4;
+    }
+    .slide-annotation .annotation-footer {
+      text-align: center;
+      font-size: clamp(0.45rem, 0.6vw, 0.6rem);
+      color: var(--text-muted);
+      margin-top: clamp(0.15rem, 0.4vh, 0.3rem);
+      letter-spacing: 0.04em;
+    }
+
+    /* ===========================================
+       RESPONSIVE BREAKPOINTS
+       =========================================== */
+    @media (max-height: 700px) {
+      :root {
+        --slide-padding: clamp(0.75rem, 3vw, 2rem);
+        --title-size: clamp(1.2rem, 3.5vw, 2.2rem);
+        --h2-size: clamp(0.95rem, 2.5vw, 1.6rem);
+      }
+      .slide-cover .cover-photo-placeholder {
+        width: 120px;
+        height: 120px;
+      }
+      .slide-quote .quote-photo-mini {
+        width: 56px;
+        height: 56px;
+        bottom: 2rem;
+        right: 2rem;
+      }
+      .slide::after { inset: 14px; }
+    }
+
+    @media (max-height: 600px) {
+      :root {
+        --slide-padding: clamp(0.5rem, 2vw, 1.25rem);
+        --body-size: clamp(0.6rem, 1vw, 0.85rem);
+      }
+      .slide::after { inset: 10px; }
+      .slide-cover .cover-photo-placeholder {
+        width: 90px;
+        height: 90px;
+      }
+      .slide-quote .quote-photo-mini {
+        width: 44px;
+        height: 44px;
+      }
+      .slide-features .screenshot-placeholder {
+        max-height: 200px;
+      }
+    }
+
+    @media (max-width: 800px) {
+      .slide-policy .cards-row {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .slide-features .features-layout {
+        flex-direction: column;
+      }
+      .slide-features .features-right {
+        flex: 0 0 auto;
+      }
+      .slide-features .screenshot-placeholder {
+        max-width: 100%;
+        height: 180px;
+      }
+      .slide-concept .concept-columns {
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .slide-education .edu-layout {
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .slide-education .edu-divider {
+        width: 80%;
+        height: 1px;
+        align-self: center;
+        background: linear-gradient(
+          to right,
+          transparent 0%,
+          var(--gold) 20%,
+          var(--gold) 80%,
+          transparent 100%
+        );
+      }
+      .slide-future .location-cards {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .slide-future .future-layout {
+        gap: 0.5rem;
+      }
+      .slide-future .timeline-desc {
+        max-width: 100px;
+      }
+      .slide-cover .cover-layout {
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .slide-workflow .pipeline {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .slide-workflow .pipeline-arrow {
+        transform: rotate(90deg);
+        padding-top: 0;
+      }
+      .slide-workflow .team-row {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .slide-annotation .annotation-layer {
+        flex-direction: column;
+        gap: 0.3rem;
+      }
+      .slide-annotation .layer-badge {
+        flex: 0 0 auto;
+        flex-direction: row;
+        gap: 0.5rem;
+        padding: 0.3rem 0.8rem;
+      }
+      .slide-annotation .layer-body .layer-item {
+        white-space: normal;
+      }
+    }
+
+    /* ===========================================
+       REDUCED MOTION
+       =========================================== */
+    @media (prefers-reduced-motion: reduce) {
+      .slide {
+        transition: opacity 0.15s ease;
+      }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===========================================
+       SLIDES CONTAINER
+       =========================================== -->
+  <div class="slides-container" id="slidesContainer">
+
+    <!-- ===== SLIDE 1: COVER ===== -->
+    <section class="slide slide-cover active" data-index="0">
+      <div class="slide-content">
+        <!-- SVG canal decoration (right side) -->
+        <svg class="canal-svg" viewBox="0 0 600 900" preserveAspectRatio="none">
+          <path d="M300,0 C200,250 420,350 250,550 C150,680 380,750 220,900"
+                fill="none" stroke="rgba(201,168,76,0.10)" stroke-width="2.5" />
+          <path d="M360,0 C480,280 180,380 310,580 C380,680 240,780 330,900"
+                fill="none" stroke="rgba(201,168,76,0.07)" stroke-width="3.5" />
+          <path d="M240,0 C140,320 400,420 200,620 C80,730 320,800 180,900"
+                fill="none" stroke="rgba(201,168,76,0.13)" stroke-width="1.8" />
+          <path d="M420,0 C520,220 280,380 420,520 C500,620 300,750 380,900"
+                fill="none" stroke="rgba(201,168,76,0.05)" stroke-width="4.5" />
+        </svg>
+
+        <div class="cover-layout">
+          <!-- Photo: 180×180 circle, left of title -->
+          <div class="cover-photo-placeholder" style="width:180px;height:180px;border-radius:50%;overflow:hidden;flex-shrink:0;z-index:2;border:2px solid var(--gold-dim);">
+            <img src="zhangjian-photo.png" alt="张謇" style="width:100%;height:100%;object-fit:cover;display:block;">
+          </div>
+          <div class="cover-text">
+            <h1 class="cover-title editable">张謇时空罗盘</h1>
+            <p class="cover-subtitle editable">通吕运河 · 诗歌数字人文平台</p>
+            <div class="gold-divider" style="margin-top:clamp(0.5rem,1.2vh,1rem);margin-bottom:clamp(0.5rem,1.2vh,1rem);"></div>
+            <p class="cover-url editable">loveeti.top</p>
+          </div>
+        </div>
+        <p class="cover-footer editable">南通大学 · 数字人文专业</p>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 2: POLICY CONTEXT ===== -->
+    <section class="slide slide-policy" data-index="1">
+      <div class="slide-content">
+        <div class="policy-header">
+          <h2 class="editable">我们站在哪里——政策背景与时代坐标</h2>
+          <p class="policy-subtitle editable">POLICY CONTEXT · 三重国家战略呼应</p>
+        </div>
+        <div class="cards-row">
+          <div class="policy-card">
+            <span class="card-icon">🏛️</span>
+            <p class="card-title editable">大运河文化带建设</p>
+            <p class="card-desc editable">习近平总书记明确指出：大运河文化要在保护、传承、利用上下功夫，让古老大运河焕发时代新风貌。通吕运河作为大运河文化带最南端江海节点，长期缺乏数字化呈现。</p>
+          </div>
+          <div class="policy-card">
+            <span class="card-icon">🤖</span>
+            <p class="card-title editable">文化数字化国家战略</p>
+            <p class="card-desc editable">"十五五"规划：文化数字化从"数字化"向"数智化"纵深发展。AI重塑文化生产体系、文化遗产数字化活化传承，文化新质生产力热度持续。</p>
+          </div>
+          <div class="policy-card">
+            <span class="card-icon">📺</span>
+            <p class="card-title editable">沿着运河看中国</p>
+            <p class="card-desc editable">国家广电总局《闪耀吧！大运河》联动八省市十城市，从"古、今、中、外"四个维度讲述运河流域故事。南通通吕运河在这场热潮中几乎缺席——而张謇正是这段运河最重要的历史见证者。</p>
+          </div>
+        </div>
+        <div class="policy-banner editable">
+          切入点：大运河有国家叙事，通吕运河有地方故事；纪录片有宏观视角，诗歌有个体温度——诗歌是最轻量的文脉载体，却是最深层的情感锚点。
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 3: CORE CONCEPT ===== -->
+    <section class="slide slide-concept" data-index="2">
+      <div class="slide-content">
+        <div class="concept-center">
+          <p class="concept-big editable">入脑入芯</p>
+          <div class="gold-divider" style="width:30%;max-width:300px;"></div>
+          <div class="concept-columns">
+            <div class="concept-col">
+              <p class="col-header editable">入脑 = 感受 → 理解</p>
+              <p class="col-text editable">用AI视频·音频降低门槛<br/>让古诗文成为可感知的视听体验</p>
+            </div>
+            <div class="concept-col">
+              <p class="col-header editable">入芯 = 记忆 → 认同</p>
+              <p class="col-text editable">用知识图谱建立文化连接<br/>让历史人物成为真实的精神坐标</p>
+            </div>
+          </div>
+          <p class="concept-footer editable">数字人文不是把文化搬上网，而是要让文化"入脑入芯"——感受→理解→记忆的认知路径</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 4 (NEW): PRODUCTION PIPELINE ===== -->
+    <section class="slide slide-workflow" data-index="3">
+      <div class="slide-content">
+        <div class="workflow-header">
+          <h2 class="editable">作品流程——从文献到数字文脉</h2>
+          <p class="section-tag editable" style="margin-top:0.3rem;">PRODUCTION PIPELINE · 数据采集→文本清洗→数据分析→AI内容生产</p>
+        </div>
+
+        <!-- Pipeline steps -->
+        <div class="pipeline">
+          <div class="pipeline-step">
+            <div class="step-number">①</div>
+            <p class="step-title editable">数据采集</p>
+            <p class="step-desc editable">张謇诗歌文献搜集<br/>通吕运河历史地理数据<br/>大运河文化带政策文本</p>
+            <span class="step-owner editable">内容策划·AIGC</span>
+          </div>
+          <div class="pipeline-arrow">→</div>
+          <div class="pipeline-step">
+            <div class="step-number">②</div>
+            <p class="step-title editable">文本清洗</p>
+            <p class="step-desc editable">诗歌格式标准化处理<br/>异体字·标点·段落归一<br/>去除文献数字化噪声</p>
+            <span class="step-owner editable">内容策划·AIGC</span>
+          </div>
+          <div class="pipeline-arrow">→</div>
+          <div class="pipeline-step">
+            <div class="step-number">③</div>
+            <p class="step-title editable">数据分析应用</p>
+            <p class="step-desc editable">知识图谱构建与关联<br/>GIS地理节点映射<br/>诗歌×地点×人物关系挖掘</p>
+            <span class="step-owner editable">技术架构·前端</span>
+          </div>
+          <div class="pipeline-arrow">→</div>
+          <div class="pipeline-step">
+            <div class="step-number">④</div>
+            <p class="step-title editable">AI内容生产</p>
+            <p class="step-desc editable">可灵模型诗歌意象视频<br/>AI配音音频制作<br/>前端Leaflet地图可视化</p>
+            <span class="step-owner editable">双方协同</span>
+          </div>
+        </div>
+
+        <!-- Team info -->
+        <div class="team-row">
+          <div class="team-card">
+            <p class="team-role editable">🖥️ 技术架构与前端开发</p>
+            <p class="team-detail editable">负责：数据分析应用、GIS地图引擎（Leaflet）、知识图谱可视化、前后端部署（loveeti.top）</p>
+          </div>
+          <div class="team-card">
+            <p class="team-role editable">🎬 内容策划与AIGC视频制作</p>
+            <p class="team-detail editable">负责：数据采集、文本清洗、诗歌多维度标注、可灵AI视频生成、音频制作</p>
+          </div>
+        </div>
+
+        <div class="pipeline-banner editable">
+          两人分工明确，各司其职——从文献到数字文脉的完整闭环
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 5: PRODUCT FEATURES ===== -->
+    <section class="slide slide-features" data-index="4">
+      <div class="slide-content">
+        <div class="features-layout">
+          <div class="features-left">
+            <h2 class="editable">我们做了什么——产品现状与技术实现</h2>
+            <p style="font-family:var(--font-serif);color:var(--gold);font-size:clamp(0.7rem,0.9vw,0.85rem);margin-bottom:0.5rem;letter-spacing:0.06em;" class="editable">产品逻辑：一首诗 → 一个节点 → 一段记忆（GIS地图 × 诗歌 × 知识图谱）</p>
+            <div class="feature-item">
+              <p class="feature-label editable">【视】</p>
+              <p class="feature-title editable">AI诗歌意象视频</p>
+              <p class="feature-desc editable">用可灵模型将诗句转化为15-30秒视觉短片<br/>将文字意象还原为可观看的画面</p>
+            </div>
+            <div class="feature-item">
+              <p class="feature-label editable">【听】</p>
+              <p class="feature-title editable">AI配音诗歌音频</p>
+              <p class="feature-desc editable">古诗文有了声音维度<br/>朗读·配乐·情境声效三合一</p>
+            </div>
+            <div class="feature-item">
+              <p class="feature-label editable">【知】</p>
+              <p class="feature-title editable">历史知识图谱</p>
+              <p class="feature-desc editable">诗歌背后的历史事件·人物关系·地理脉络<br/>可视化呈现文化上下文</p>
+            </div>
+            <p class="feature-stats editable">
+              已完成 <span class="stat-big editable">8</span> 首张謇诗歌全维度可视化 · 前端Leaflet引擎 + 可灵AI视频模型
+            </p>
+            <p style="font-size:var(--small-size);color:var(--text-muted);margin-top:0.3rem;" class="editable">
+              推进中：张謇诗歌概览性AI视频——"人物生平 × 通吕运河 × 大运河文化带"叙事主线
+            </p>
+          </div>
+          <div class="features-right">
+            <div class="screenshot-placeholder" style="width:100%;height:clamp(280px,55vh,450px);max-width:340px;border-radius:18px;overflow:hidden;border:1px solid var(--gold-dim);">
+              <img src="zhangjian-website.png" alt="网站截图 loveeti.top" style="width:100%;height:100%;object-fit:cover;display:block;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 5: CORE QUOTE ===== -->
+    <section class="slide slide-quote" data-index="5">
+      <div class="slide-content">
+        <div class="quote-center">
+          <p class="quote-line editable">天之生人也，与草木无异。</p>
+          <p class="quote-line editable">若仅仅出于己，而不尽于人，</p>
+          <p class="quote-line big editable">非人也。</p>
+          <div class="gold-divider" style="width:30%;max-width:250px;"></div>
+          <p class="quote-attribution editable">张謇 · 人生信条 · 亦是本项目的精神内核</p>
+        </div>
+        <div class="quote-photo-mini" style="width:80px;height:80px;border-radius:50%;overflow:hidden;z-index:2;border:2px solid var(--gold-dim);position:absolute;bottom:clamp(2.5rem,5vh,4rem);right:clamp(3rem,5vw,5rem);">
+          <img src="zhangjian-photo.png" alt="张謇" style="width:100%;height:100%;object-fit:cover;display:block;">
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 7 (NEW): MULTI-DIMENSIONAL ANNOTATION ===== -->
+    <section class="slide slide-annotation" data-index="6">
+      <div class="slide-content">
+        <div class="annotation-header">
+          <h2 class="editable">核心灵魂——诗歌多维度文本标注体系</h2>
+          <p class="section-tag editable" style="margin-top:0.3rem;">MULTI-DIMENSIONAL ANNOTATION · 竞赛作品与一般AI生成的最大不同</p>
+          <p style="font-family:var(--font-serif);color:var(--text-white);font-size:clamp(0.8rem,1vw,0.95rem);margin-top:0.5rem;letter-spacing:0.05em;" class="editable">案例：《盆松》——张謇家乡私塾时期（十四岁前）｜ 山泽孤生种，谁将到此盆？</p>
+        </div>
+
+        <div class="annotation-stack">
+          <!-- Layer 1: Entity Annotation -->
+          <div class="annotation-layer">
+            <div class="layer-badge">
+              <span class="layer-icon">📌</span>
+              <p class="layer-name editable">实体标注</p>
+              <p class="layer-tag editable">基础层 · FOUNDATION</p>
+            </div>
+            <div class="layer-body">
+              <p class="layer-question editable">确定时间、地点、人物 —— 锚定诗歌的历史坐标</p>
+              <div class="layer-items">
+                <span class="layer-item editable">作者：张謇（14岁前）</span>
+                <span class="layer-item editable">时间：同治五年之前 · 家乡私塾时期</span>
+                <span class="layer-item editable">地点：南通海门常乐镇</span>
+                <span class="layer-item editable">时代：同治年间 · 科举寒门士子晋升</span>
+              </div>
+              <p class="layer-output editable">深层目的：隐寓左思《咏史》"郁郁涧底松"诗意，反映寒素出身欲改变命运的心志。关联事件：10岁父张彭年自辟家塾，延请宋效祁先生教授。</p>
+            </div>
+          </div>
+
+          <!-- Layer 2: Imagery Annotation -->
+          <div class="annotation-layer">
+            <div class="layer-badge">
+              <span class="layer-icon">🎨</span>
+              <p class="layer-name editable">意象标注</p>
+              <p class="layer-tag editable">语义层 · SEMANTICS</p>
+            </div>
+            <div class="layer-body">
+              <p class="layer-question editable">识别并分类诗歌意象元素 —— 建立视觉元素的语义映射</p>
+              <div class="layer-items">
+                <span class="layer-item editable">自然·植物：松 → 坚韧高洁，盆中受困之才</span>
+                <span class="layer-item editable">自然·地理：山泽 → 本源出身 · 原始状态</span>
+                <span class="layer-item editable">人文·器物：盆 → 束缚与局限的现实处境</span>
+                <span class="layer-item editable">人文·建筑：梁栋 → 栋梁之才 · 远大理想</span>
+                <span class="layer-item editable">人文·其他：斧痕 → 社会塑造与人生创伤</span>
+              </div>
+              <p class="layer-output editable">6项核心意象：自然意象4项（植物1+地理1+气象2） + 人文意象3项（器物1+建筑1+其他1），服务于"受困与抱负的矛盾"主题</p>
+            </div>
+          </div>
+
+          <!-- Layer 3: Shot Type Annotation -->
+          <div class="annotation-layer">
+            <div class="layer-badge">
+              <span class="layer-icon">🎬</span>
+              <p class="layer-name editable">景别标注</p>
+              <p class="layer-tag editable">视觉层 · VISUAL</p>
+            </div>
+            <div class="layer-body">
+              <p class="layer-question editable">确定画面镜头语言 —— 指导AI视频的构图与节奏</p>
+              <div class="layer-items">
+                <span class="layer-item editable">远景：山泽孤松 · 同治年间常乐镇乡野全景</span>
+                <span class="layer-item editable">中景：青苍盆松蟠郁形态 · 私塾庭院场景</span>
+                <span class="layer-item editable">近景：宿黛含霜 · 创鳞斧痕 · 松针露珠特写</span>
+              </div>
+              <p class="layer-output editable">分镜逻辑：远景铺陈（出身环境）→ 中景叙事（盆松受困）→ 近景共鸣（磨痕迹象）→ 情感从"孤寂→坚韧→沧桑→无奈"逐层递进</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="annotation-banner editable">
+          递进逻辑：实体标注（历史真实）→ 意象标注（语义准确）→ 景别标注（视觉感染力）。情感脉络：孤寂感 → 坚韧心 → 沧桑情 → 无奈思。这是符合诗文意思和历史真实的基础与基石，也是竞赛作品区别于一般AI生成的核心壁垒。
+        </div>
+        <p class="annotation-footer editable">参照徐老师诗歌多维度标注体系 · 含实体/结构/韵律/修辞/意象/意境/情感/主题文化共9大维度 · 本平台聚焦文本→视觉转化的三层标注</p>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 8: EDUCATION VALUE ===== -->
+    <section class="slide slide-education" data-index="7">
+      <div class="slide-content">
+        <h2 style="text-align:center;color:var(--gold);margin-bottom:clamp(0.8rem,2vh,1.5rem);" class="editable">教育意义——为什么这件事值得做</h2>
+        <div class="edu-layout">
+          <div class="edu-col">
+            <h3 class="danger editable">现实困境</h3>
+            <ul class="edu-list">
+              <li class="editable">张謇诗歌长期以线装书、学术论文形式存在</li>
+              <li class="editable">普通大众·中小学生几乎无法触达</li>
+              <li class="editable">AI等技术在运河文化中的应用大多停留在旅游、展览场景</li>
+              <li class="editable">真正进入日常教育场景的产品几乎是空白</li>
+            </ul>
+          </div>
+          <div class="edu-divider"></div>
+          <div class="edu-col">
+            <h3 class="golden editable">我们的答案</h3>
+            <ul class="edu-list">
+              <li class="editable"><span class="sub">入脑——降低理解门槛</span>AI视频和音频让古诗文不是背诵任务，而是可感知的视听体验</li>
+              <li class="editable"><span class="sub">入芯——建立文化认同</span>知识图谱让孩子理解诗歌背后的历史、地理、人物，形成真正的文化认同</li>
+              <li class="editable"><span class="sub">文化普惠工具</span>不是好看的网站，是为文化普惠做的工具</li>
+            </ul>
+          </div>
+        </div>
+        <div class="edu-banner editable">
+          我们不是在做一个好看的网站，我们是在为文化普惠做一个工具。
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 7: FUTURE PLANS ===== -->
+    <section class="slide slide-future" data-index="8">
+      <div class="slide-content">
+        <div class="future-layout">
+          <h2 class="editable">我们要去哪里——文旅板块与长期愿景</h2>
+          <div style="width:calc(100% - 48px);max-width:1100px;margin:0.4rem auto 0;background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.18);padding:clamp(6px,1.2vh,10px) clamp(0.8rem,1.5vw,1.5rem);text-align:center;color:var(--gold);font-family:var(--font-serif);font-size:clamp(0.7rem,0.9vw,0.85rem);letter-spacing:0.05em;" class="editable">
+            📜 「十五五」规划明确推动文旅深度融合与文化产业数字化发展，诗歌×文旅的跨界融合迎来直接政策窗口
+          </div>
+          <div class="timeline">
+            <div class="timeline-node">
+              <div class="timeline-circle">①</div>
+              <p class="timeline-label editable">短期</p>
+              <p class="timeline-desc editable">张謇全部诗歌数字化<br/>形成完整诗歌宇宙</p>
+            </div>
+            <div class="timeline-node">
+              <div class="timeline-circle">②</div>
+              <p class="timeline-label editable">中期A</p>
+              <p class="timeline-desc editable">乡土南通<br/>接入南通中小学课程体系</p>
+            </div>
+            <div class="timeline-node">
+              <div class="timeline-circle">③</div>
+              <p class="timeline-label editable">中期B</p>
+              <p class="timeline-desc editable">跟着张謇游南通<br/>诗歌×景点文旅打卡路线</p>
+            </div>
+            <div class="timeline-node">
+              <div class="timeline-circle">④</div>
+              <p class="timeline-label editable">长期</p>
+              <p class="timeline-desc editable">可复用范式<br/>向其他运河城市扩展</p>
+            </div>
+          </div>
+          <!-- Location cards -->
+          <div class="location-cards">
+            <div class="location-card">
+              <p class="poem-name editable">《狼山三元宫近斥僧挽词》</p>
+              <p class="arrow-down">↓</p>
+              <p class="place-name editable">今日景点：狼山风景区（自然人文景观）</p>
+              <div class="card-img-placeholder" style="height:clamp(50px,8vh,75px);border-radius:4px;overflow:hidden;margin-top:0.3rem;border:1px solid var(--gold-dim);">
+                <img src="zhangjian-langshan.png" alt="狼山风景区" style="width:100%;height:100%;object-fit:cover;display:block;">
+              </div>
+            </div>
+            <div class="location-card">
+              <p class="poem-name editable">《八月十三夜曼寿堂看月》</p>
+              <p class="arrow-down">↓</p>
+              <p class="place-name editable">今日景点：濠河风景区（城市核心名片）</p>
+              <div class="card-img-placeholder" style="height:clamp(50px,8vh,75px);border-radius:4px;overflow:hidden;margin-top:0.3rem;border:1px solid var(--gold-dim);">
+                <img src="zhangjian-haohe.png" alt="濠河风景区" style="width:100%;height:100%;object-fit:cover;display:block;">
+              </div>
+            </div>
+            <div class="location-card">
+              <p class="poem-name editable">《盆松》</p>
+              <p class="arrow-down">↓</p>
+              <p class="place-name editable">今日景点：张謇纪念馆（人文历史地标）</p>
+              <div class="card-img-placeholder" style="height:clamp(50px,8vh,75px);border-radius:4px;overflow:hidden;margin-top:0.3rem;border:1px solid var(--gold-dim);">
+                <img src="zhangjian-memorial.png" alt="张謇纪念馆" style="width:100%;height:100%;object-fit:cover;display:block;">
+              </div>
+            </div>
+          </div>
+          <p class="future-tagline editable">文化不是孤岛，诗歌是流量入口，景点是落地转化，旅游经济是可持续的闭环</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 8: CONCLUSION ===== -->
+    <section class="slide slide-conclusion" data-index="9">
+      <div class="slide-content">
+        <!-- SVG canal decoration (left side, mirrored) -->
+        <svg class="canal-svg mirror" viewBox="0 0 600 900" preserveAspectRatio="none">
+          <path d="M300,0 C200,250 420,350 250,550 C150,680 380,750 220,900"
+                fill="none" stroke="rgba(201,168,76,0.10)" stroke-width="2.5" />
+          <path d="M360,0 C480,280 180,380 310,580 C380,680 240,780 330,900"
+                fill="none" stroke="rgba(201,168,76,0.07)" stroke-width="3.5" />
+          <path d="M240,0 C140,320 400,420 200,620 C80,730 320,800 180,900"
+                fill="none" stroke="rgba(201,168,76,0.13)" stroke-width="1.8" />
+          <path d="M420,0 C520,220 280,380 420,520 C500,620 300,750 380,900"
+                fill="none" stroke="rgba(201,168,76,0.05)" stroke-width="4.5" />
+        </svg>
+
+        <div class="conclusion-center">
+          <p class="conclusion-tag editable">CONCLUSION · 结语</p>
+          <p class="conclusion-main editable">让古老的诗句不再沉睡在故纸堆里</p>
+          <div class="gold-divider" style="width:35%;max-width:300px;"></div>
+          <p class="conclusion-sub editable">打通连接过去与未来的数字文脉</p>
+          <p style="font-family:var(--font-serif);font-size:clamp(0.8rem,1.1vw,1rem);color:var(--text-primary);margin-top:0.8rem;letter-spacing:0.05em;" class="editable">通吕运河是起点，不是终点 · 可复用于任何有历史文脉的城市</p>
+          <p class="conclusion-url editable" style="margin-top:clamp(0.8rem,2vh,1.5rem);">loveeti.top</p>
+        </div>
+        <p class="conclusion-footer editable" style="margin-top:clamp(1rem,2.5vh,2rem);">
+          张謇时空罗盘 · 通吕运河诗歌数字人文平台<br/>南通大学 · 数字人文专业
+        </p>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ===========================================
+       BOTTOM NAVIGATION BAR
+       =========================================== -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="nav-arrow" id="navPrev" aria-label="上一张" title="上一张 (←)">◂</button>
+    <div class="nav-dots" id="navDots"></div>
+    <button class="nav-arrow" id="navNext" aria-label="下一张" title="下一张 (→)">▸</button>
+    <span class="nav-page" id="navPage">01 / 08</span>
+  </nav>
+
+  <!-- ===========================================
+       INLINE EDITING UI
+       =========================================== -->
+  <div class="edit-hotzone" id="editHotzone" title="编辑模式"></div>
+  <button class="edit-toggle" id="editToggle" title="编辑模式 (E)">&#9998;</button>
+  <div class="edit-banner" id="editBanner">
+    编辑模式 · 点击文字编辑 · Ctrl+S 保存 · E 退出
+  </div>
+
+  <script>
+    /* ===========================================
+       SLIDE PRESENTATION CONTROLLER
+       =========================================== */
+    class SlidePresentation {
+      constructor() {
+        this.slides = Array.from(document.querySelectorAll('.slide'));
+        this.totalSlides = this.slides.length;
+        this.currentIndex = 0;
+
+        this.navDots = document.getElementById('navDots');
+        this.navPage = document.getElementById('navPage');
+        this.navPrev = document.getElementById('navPrev');
+        this.navNext = document.getElementById('navNext');
+
+        this.buildNavDots();
+        this.bindEvents();
+        this.updateNav();
+      }
+
+      buildNavDots() {
+        this.navDots.innerHTML = '';
+        for (let i = 0; i < this.totalSlides; i++) {
+          const dot = document.createElement('span');
+          dot.className = 'nav-dot';
+          dot.setAttribute('aria-label', `第 ${i + 1} 张`);
+          dot.addEventListener('click', () => this.goTo(i));
+          this.navDots.appendChild(dot);
+        }
+        this.dotElements = Array.from(this.navDots.querySelectorAll('.nav-dot'));
+      }
+
+      bindEvents() {
+        document.addEventListener('keydown', (e) => {
+          if (e.target.getAttribute('contenteditable') === 'true') return;
+          if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+            e.preventDefault();
+            this.next();
+          } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            this.prev();
+          }
+        });
+
+        this.navPrev.addEventListener('click', () => this.prev());
+        this.navNext.addEventListener('click', () => this.next());
+
+        // Touch/swipe support
+        let touchStartY = 0;
+        document.addEventListener('touchstart', (e) => {
+          touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+        document.addEventListener('touchend', (e) => {
+          const delta = touchStartY - e.changedTouches[0].clientY;
+          if (Math.abs(delta) > 50) {
+            if (delta > 0) this.next();
+            else this.prev();
+          }
+        });
+
+        // Mouse wheel
+        let wheelTimeout;
+        document.addEventListener('wheel', (e) => {
+          if (wheelTimeout) return;
+          wheelTimeout = setTimeout(() => { wheelTimeout = null; }, 800);
+          if (e.deltaY > 20 || e.deltaX > 20) this.next();
+          else if (e.deltaY < -20 || e.deltaX < -20) this.prev();
+        }, { passive: true });
+      }
+
+      goTo(index) {
+        if (index < 0 || index >= this.totalSlides || index === this.currentIndex) return;
+        this.slides[this.currentIndex].classList.remove('active');
+        this.slides[index].classList.add('active');
+        this.currentIndex = index;
+        this.updateNav();
+      }
+
+      next() {
+        if (this.currentIndex < this.totalSlides - 1) {
+          this.goTo(this.currentIndex + 1);
+        }
+      }
+
+      prev() {
+        if (this.currentIndex > 0) {
+          this.goTo(this.currentIndex - 1);
+        }
+      }
+
+      updateNav() {
+        this.dotElements.forEach((dot, i) => {
+          dot.classList.toggle('active', i === this.currentIndex);
+        });
+        const pageNum = String(this.currentIndex + 1).padStart(2, '0');
+        this.navPage.textContent = `${pageNum} / ${String(this.totalSlides).padStart(2, '0')}`;
+      }
+    }
+
+    /* ===========================================
+       INLINE EDITOR
+       =========================================== */
+    class InlineEditor {
+      constructor() {
+        this.isActive = false;
+        this.editToggle = document.getElementById('editToggle');
+        this.editBanner = document.getElementById('editBanner');
+        this.editHotzone = document.getElementById('editHotzone');
+        this.editableElements = Array.from(document.querySelectorAll('.editable'));
+
+        this.setupHoverBehavior();
+        this.bindEditEvents();
+        this.loadFromStorage();
+      }
+
+      setupHoverBehavior() {
+        let hideTimeout = null;
+
+        this.editHotzone.addEventListener('mouseenter', () => {
+          clearTimeout(hideTimeout);
+          if (!this.isActive) this.editToggle.classList.add('show');
+        });
+        this.editHotzone.addEventListener('mouseleave', () => {
+          hideTimeout = setTimeout(() => {
+            if (!this.isActive) this.editToggle.classList.remove('show');
+          }, 400);
+        });
+        this.editToggle.addEventListener('mouseenter', () => {
+          clearTimeout(hideTimeout);
+        });
+        this.editToggle.addEventListener('mouseleave', () => {
+          hideTimeout = setTimeout(() => {
+            if (!this.isActive) this.editToggle.classList.remove('show');
+          }, 400);
+        });
+        this.editHotzone.addEventListener('click', () => this.toggleEditMode());
+      }
+
+      bindEditEvents() {
+        this.editToggle.addEventListener('click', () => this.toggleEditMode());
+
+        document.addEventListener('keydown', (e) => {
+          // E key to toggle (skip when typing in editable fields)
+          if ((e.key === 'e' || e.key === 'E') &&
+              !e.target.getAttribute('contenteditable') &&
+              !e.ctrlKey && !e.metaKey) {
+            this.toggleEditMode();
+          }
+          // Ctrl+S to save/export
+          if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            if (this.isActive) this.exportFile();
+          }
+        });
+
+        // Auto-save to localStorage on text input
+        document.addEventListener('input', (e) => {
+          if (this.isActive && e.target.getAttribute('contenteditable') === 'true') {
+            this.saveToStorage();
+          }
+        });
+      }
+
+      toggleEditMode() {
+        this.isActive = !this.isActive;
+        document.body.classList.toggle('edit-active', this.isActive);
+        this.editToggle.classList.toggle('active', this.isActive);
+        this.editBanner.classList.toggle('active', this.isActive);
+
+        this.editableElements.forEach(el => {
+          if (this.isActive) {
+            el.setAttribute('contenteditable', 'true');
+          } else {
+            el.removeAttribute('contenteditable');
+          }
+        });
+
+        if (this.isActive) {
+          this.saveToStorage();
+        } else {
+          localStorage.removeItem('slide-edit-state');
+        }
+      }
+
+      saveToStorage() {
+        const state = {};
+        this.editableElements.forEach((el, i) => {
+          const key = el.getAttribute('data-edit-key') || `el-${i}`;
+          if (!el.getAttribute('data-edit-key')) {
+            el.setAttribute('data-edit-key', key);
+          }
+          state[key] = el.innerHTML;
+        });
+        try {
+          localStorage.setItem('slide-edit-state', JSON.stringify(state));
+        } catch (_) { /* storage full, ignore */ }
+      }
+
+      loadFromStorage() {
+        try {
+          const raw = localStorage.getItem('slide-edit-state');
+          if (!raw) return;
+          const state = JSON.parse(raw);
+          this.editableElements.forEach((el, i) => {
+            const key = el.getAttribute('data-edit-key') || `el-${i}`;
+            if (state[key] !== undefined) {
+              el.innerHTML = state[key];
+            }
+          });
+        } catch (_) { /* ignore corrupt data */ }
+      }
+
+      exportFile() {
+        // Strip edit state so the saved file opens cleanly
+        const editEls = Array.from(document.querySelectorAll('[contenteditable]'));
+        editEls.forEach(el => el.removeAttribute('contenteditable'));
+        document.body.classList.remove('edit-active');
+        this.editToggle.classList.remove('active', 'show');
+        this.editBanner.classList.remove('active');
+
+        const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+
+        // Restore edit state
+        document.body.classList.add('edit-active');
+        editEls.forEach(el => el.setAttribute('contenteditable', 'true'));
+        this.editToggle.classList.add('active');
+        this.editBanner.classList.add('active');
+
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = '张謇时空罗盘-演示文稿.html';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+    }
+
+    // Initialize
+    const presentation = new SlidePresentation();
+    const editor = new InlineEditor();
+  </script>
+
+</body>
+</html>

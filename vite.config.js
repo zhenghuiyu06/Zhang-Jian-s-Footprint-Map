@@ -5,8 +5,7 @@ export default defineConfig({
   plugins: [react()],
   base: '/',
   build: {
-    outDir: '通吕运河',
-    emptyOutDir: false,
+    outDir: 'docs',
   },
   server: {
     port: 3000,
